@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core
+		http://www.mulesoft.org/schema/mule/core/3.5/mule.xsd
+		http://www.mulesoft.org/schema/mule/http
+		http://www.mulesoft.org/schema/mule/http/3.5/mule-http.xsd
+		http://www.mulesoft.org/schema/mule/jms 
+		http://www.mulesoft.org/schema/mule/jms/3.5/mule-jms.xsd 
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<context:property-placeholder location="conf.properties" />
+
+	<custom-transformer name="ByteArraytoString" returnClass="java.lang.String" class="org.moon.mule.transformers.ByteArrayToStringTransformer" />
+
+	<flow name="test">
+		<inbound-endpoint address="http://localhost:8080/test" exchange-pattern="request-response" />
+		<logger level="ERROR" message="#[payload]" />
+	</flow>
+	<jms:activemq-connector name="jmsConnector" brokerURL="tcp://localhost:61616">
+		<reconnect frequency="60000" count="5" blocking="false" />
+	</jms:activemq-connector>
+
+	<flow name="simpleJMS">
+		<jms:inbound-endpoint name="inboundMessage" queue="inbound.message" connector-ref="jmsConnector" mimeType="text/plain" />
+		<transformer ref="ByteArraytoString" />
+		<logger message="simpleJMS ==> #[payload]" level="INFO" />
+		<http:outbound-endpoint address="http://localhost:8080/test" exchange-pattern="request-response" contentType="text/xml" />
+	</flow>
+
+	<flow name="simpleENQ">
+		<http:inbound-endpoint address="http://${http.host}:${http.port}/enq" exchange-pattern="one-way" />
+		<jms:outbound-endpoint queue="inbound.message" connector-ref="jmsConnector" />
+	</flow>
+
+</mule>
