@@ -19,6 +19,7 @@
 		<inbound-endpoint address="http://localhost:8080/test" exchange-pattern="request-response" />
 		<logger level="ERROR" message="#[payload]" />
 	</flow>
+	
 	<jms:activemq-connector name="jmsConnector" brokerURL="tcp://localhost:61616">
 		<reconnect frequency="60000" count="5" blocking="false" />
 	</jms:activemq-connector>
